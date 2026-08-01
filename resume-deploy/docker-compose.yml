@@ -1,0 +1,44 @@
+# Expects resume-backend/ and resume-frontend/ checked out as siblings of
+# this file (i.e. resume-deploy/, resume-backend/, resume-frontend/ all
+# under the same parent directory). Adjust the build contexts below if
+# your layout differs.
+
+services:
+  backend:
+    build:
+      context: ../resume-backend
+    container_name: resume-backend
+    restart: unless-stopped
+    ports:
+      - "8010:8000"
+    volumes:
+      # Named volume — survives image rebuilds/removals, holds app.db,
+      # data.yaml, jds/, resumes/. First run: copy your existing data.yaml
+      # and resume_template.tex in (see README "First run" section).
+      - resume-data:/srv/data
+    environment:
+      # host.docker.internal is Docker's bridge back to the host machine —
+      # this is how the backend container reaches Ollama running on your
+      # Arch host at localhost:11434. Requires extra_hosts below on Linux
+      # (Docker Desktop on Mac/Windows maps this automatically).
+      - OLLAMA_BASE_URL=http://host.docker.internal:11434
+      # Only needed if you use the --cloud / Claude path instead of Ollama.
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
+    extra_hosts:
+      # Required on Linux (incl. Arch) — host.docker.internal isn't defined
+      # by default there like it is on Docker Desktop. This is what actually
+      # makes Ollama reachable from inside the container.
+      - "host.docker.internal:host-gateway"
+
+  frontend:
+    build:
+      context: ../resume-frontend
+    container_name: resume-frontend
+    restart: unless-stopped
+    ports:
+      - "8020:80"
+    depends_on:
+      - backend
+
+volumes:
+  resume-data:

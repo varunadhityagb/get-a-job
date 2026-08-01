@@ -1,0 +1,227 @@
+%-------------------------
+% Resume in Latex
+% Author: Varun Adhitya G B
+% License : MIT
+%------------------------
+
+\documentclass[a4paper,10.5pt]{article}
+\usepackage{latexsym}
+\usepackage{xcolor}
+\usepackage{float}
+\usepackage{ragged2e}
+\usepackage{tabularx}
+\usepackage{titlesec}
+\usepackage{geometry}
+\usepackage{verbatim}
+\usepackage{enumitem}
+\usepackage[hidelinks]{hyperref}
+\usepackage{fancyhdr}
+\usepackage{multicol}
+\usepackage{graphicx}
+\usepackage{cfr-lm}
+\usepackage[T1]{fontenc}
+
+\setlength{\multicolsep}{0pt}
+\pagestyle{fancy}
+\fancyhf{}
+\renewcommand{\headrulewidth}{0pt}
+\renewcommand{\footrulewidth}{0pt}
+\geometry{left=1.3cm, top=1cm, right=1.3cm, bottom=1cm}
+
+\usepackage[most]{tcolorbox}
+\tcbset{
+	frame code={},
+	center title,
+	left=0pt, right=0pt, top=0pt, bottom=0pt,
+	colback=gray!12,
+	colframe=white,
+	width=\dimexpr\textwidth\relax,
+	enlarge left by=-2mm,
+	boxsep=4pt,
+	arc=0pt,outer arc=0pt,
+}
+
+\urlstyle{same}
+\raggedright
+\setlength{\tabcolsep}{0in}
+
+% Section formatting - tighter, cleaner rule
+\titleformat{\section}{
+  \vspace{-2pt}\scshape\raggedright\large\bfseries
+}{}{0em}{}[\color{black}\titlerule \vspace{0pt}]
+\titlespacing{\section}{0pt}{8pt}{4pt}
+
+%-------------------------
+% Custom commands
+\newcommand{\resumeItem}[2]{
+  \item{\textbf{#1}\hspace{0.5mm}#2}
+}
+
+\newcommand{\resumeSubheading}[4]{
+  \vspace{0.5mm}\item
+    \begin{tabular*}{0.98\textwidth}[t]{l@{\extracolsep{\fill}}r}
+        \textbf{#1} & \textit{\footnotesize #4} \\
+        \textit{\footnotesize #3} & \footnotesize #2 \\
+    \end{tabular*}
+    \vspace{-2.5mm}
+}
+
+\newcommand{\resumeProject}[4]{
+  \vspace{1mm}\item
+    \begin{tabular*}{0.98\textwidth}[t]{l@{\extracolsep{\fill}}r}
+        \textbf{#1} & \textit{\footnotesize #3} \\
+        \footnotesize\textit{#2} & \footnotesize #4 \\
+    \end{tabular*}
+    \vspace{-1.8mm}
+}
+
+\newcommand{\resumeSubHeadingListStart}{%
+  \begin{itemize}[leftmargin=0em, label={}, itemsep=0mm, topsep=1pt]
+}
+
+\newcommand{\resumeItemListStart}{%
+  \begin{itemize}[leftmargin=2.2ex, rightmargin=1ex, label={},
+                  itemsep=0.8mm, parsep=0pt, topsep=1mm]\small
+}
+
+\newcommand{\resumeSubHeadingListEnd}{\end{itemize}\vspace{-1mm}}
+\newcommand{\resumeItemListEnd}{\end{itemize}\vspace{1mm}}
+
+\newcommand{\cvsection}[1]{%
+  \vspace{2mm}
+  \begin{tcolorbox}
+      \textbf{\large #1}
+  \end{tcolorbox}
+  \vspace{-3mm}
+}
+%-------------------------------------------
+\newcommand{\name}{Varun Adhitya G B}
+\newcommand{\phone}{9886895779}
+\newcommand{\emaila}{varunadhitya.balaji@gmail.com}
+\newcommand{\cgpa}{8.8}
+\newcommand{\ghusername}{varunadhityagb}
+\newcommand{\linkedinusername}{varunadhityagb}
+
+\begin{document}
+\fontfamily{cmr}\selectfont
+
+%----------HEADING-----------------
+\begin{center}
+  {\Huge \textbf{\name}} \\
+  \vspace{2mm}
+  \small
+  \href{mailto:\emaila}{\emaila}
+  \hspace{2mm}$\vert$\hspace{1mm}
+  +91-\phone
+  \hspace{2mm}$\vert$\hspace{1mm}
+  \href{https://github.com/\ghusername}{GitHub: @\ghusername}
+  \hspace{2mm}$\vert$\hspace{1mm}
+  \href{https://www.linkedin.com/in/\linkedinusername}{LinkedIn} \\
+  \vspace{0.5mm}
+  Amrita Vishwa Vidyapeetham, Bengaluru
+\end{center}
+\vspace{-4mm}
+
+%----------SUMMARY-----------------
+\section{Profile Summary}
+Computer Science student skilled in C++ and Python with strong experience building automation tools, backend applications, and Linux-based systems. Experienced in developing internal utilities, optimizing workflows, and working across the full stack from system configuration to application logic. Passionate about solving practical problems through code, data handling, and efficient software design.
+
+%----------EDUCATION-----------------
+\section{Education}
+  \resumeSubHeadingListStart
+    \resumeSubheading
+      {B.Tech in Computer Science and Engineering (Artificial Intelligence)}{CGPA: \cgpa}
+      {Amrita Vishwa Vidyapeetham, Bengaluru}{2023 -- Present}
+    \resumeSubheading
+      {High School (CBSE)}{83\%}
+      {Vagdevi Vilas School, Bengaluru}{2021 -- 2023}
+    \resumeSubheading
+      {Schooling, Grade 1--10 (CBSE)}{91\%}
+      {Vagdevi Vilas School, Bengaluru}{2011 -- 2021}
+  \resumeSubHeadingListEnd
+
+%-----------PROJECTS-----------------
+\section{Projects}
+\resumeSubHeadingListStart
+
+    \resumeProject
+      {Linux Native PDF Viewer}
+      {Developing a Linux-native PDF viewer focused on document handling and printing workflows.}
+      {Dec 2025 -- Present}
+      {}
+    \resumeItemListStart
+      \item Implemented PDF rendering and print pipeline control using Poppler and Qt6.
+      \item Strengthened understanding of system-level application development and file handling.
+      \item \textit{Tech: C, Poppler, Qt6, Linux}
+    \resumeItemListEnd
+
+    \resumeProject
+      {Self-Hosted Infrastructure}
+      {Maintaining a personal server environment hosting containerized services and file sync.}
+      {Feb 2025 -- Present}
+      {}
+    \resumeItemListStart
+      \item Automated deployment and service management using Docker and Nginx.
+      \item Improved reliability and remote accessibility through proper service orchestration.
+      \item Gained experience in system configuration, networking, and service orchestration.
+      \item \textit{Tech: Docker, Linux, Nginx, SSH}
+    \resumeItemListEnd
+
+    \resumeProject
+      {Weed Growth Stage Classification using Deep Learning}
+      {Agricultural AI system for automated weed growth stage classification to assist precision farming.}
+      {Aug 2025 -- Nov 2025}
+      {}
+    \resumeItemListStart
+      \item Benchmarked 10+ CNN and transformer architectures with attention mechanisms (CBAM, ECA, CA, SimAM).
+      \item Achieved 95.77\% test accuracy on 35,000+ images using 5-fold cross-validation.
+      \item \textit{Tech: Python, PyTorch, OpenCV}
+    \resumeItemListEnd
+
+    \resumeProject
+      {Blockchain Based Messenger}
+      {A decentralized messenger that removes central servers for secure communication.}
+      {Apr 2024}
+      {}
+    \resumeItemListStart
+      \item Eliminated centralized servers, enhancing security and privacy.
+      \item Utilized multicast sockets for efficient message delivery.
+      \item \textit{Tech: Java, RSA, SHA-256, Multicast}
+    \resumeItemListEnd
+
+    \resumeProject
+      {Password Manager}
+      {GUI-based tool to securely store and encrypt credentials.}
+      {Nov 2022}
+      {}
+    \resumeItemListStart
+      \item Encrypts stored passwords for enhanced security.
+      \item Provides an intuitive GUI for easy access and management.
+      \item \textit{Tech: Python, Tkinter, MySQL, Cryptography}
+    \resumeItemListEnd
+
+  \resumeSubHeadingListEnd
+
+%-----------SKILLS-----------------
+\section{Skills}
+ \begin{itemize}[leftmargin=0.05in, label={}, itemsep=1mm]
+    \small{\item{
+     \textbf{Languages: } C++, Python, C, Java, SQL \\
+     \textbf{Frameworks: } Django, Qt6, Tkinter \\
+     \textbf{Tools \& Technologies: } Git, Docker, Linux, Nginx, SSH \\
+     \textbf{Operating Systems: } Linux (Arch, Ubuntu Server), Windows \\
+     \textbf{DBMS: } MySQL \\
+     \textbf{Key Concepts: } Data Structures, OS, Networks, Algorithms \\
+    }}
+ \end{itemize}
+
+%-----------PUBLICATIONS-----------------
+\section{Publications}
+ \resumeSubHeadingListStart
+    \resumeItem{Blockchain-Based Communicator with Multicast Transmission}\\
+      {2024 8th International Conference on Computational System and Information Technology for Sustainable Solutions (CSITSS), 2024}
+    \resumeItem{Weed Growth Stage Classification}\\
+      {2026 International Conference on Signal, Systems, and Computing for Next-Gen Automation (ICSSCNA), 2026}
+ \resumeSubHeadingListEnd
+
+\end{document}

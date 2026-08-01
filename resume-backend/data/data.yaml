@@ -1,0 +1,195 @@
+personal:
+  name: "Varun Adhitya G B"
+  phone: "9886895779"
+  email_primary: "varunadhitya.balaji@gmail.com"
+  email_college: "bl.en.u4aie23135@bl.students.amrita.edu"
+  github_username: "varunadhityagb"
+  linkedin_username: "varunadhityagb"
+  cgpa: "8.8"
+  college: "Amrita Vishwa Vidyapeetham, Bengaluru"
+  citizenship: "Indian"
+  languages_spoken: ["English", "Tamil", "Hindi"]
+
+education:
+  - degree: "B.Tech in Computer Science and Engineering (Artificial Intelligence)"
+    institution: "Amrita Vishwa Vidyapeetham, Bengaluru"
+    score: "CGPA: 8.77"
+    dates: "2023 -- Present"
+  - degree: "High School (CBSE)"
+    institution: "Vagdevi Vilas School, Bengaluru"
+    score: "83%"
+    dates: "2021 -- 2023"
+  - degree: "Schooling, Grade 1--10 (CBSE)"
+    institution: "Vagdevi Vilas School, Bengaluru"
+    score: "91%"
+    dates: "2011 -- 2021"
+
+# Reusable profile summary variants, each angled at a different job focus.
+# LLM picks the closest one and/or rewrites it further to match the JD.
+summary_variants:
+  general:
+    text: >-
+      Computer Science student skilled in C++ and Python with strong experience
+      building automation tools, backend applications, and Linux-based systems.
+      Experienced in developing internal utilities, optimizing workflows, and
+      working across the full stack from system configuration to application
+      logic. Passionate about solving practical problems through code, data
+      handling, and efficient software design.
+    tags: [general, backend, python]
+  java_backend:
+    text: >-
+      Computer Science student with hands-on Java development experience in
+      distributed systems, secure communication, and backend applications.
+      Proficient in Core Java, OOP principles, and data structures. Solid
+      software engineering foundation spanning system-level programming, big
+      data pipelines, and full-stack development.
+    tags: [java, backend, distributed-systems]
+  linux_sysadmin:
+    text: >-
+      Computer Science student with hands-on experience operating and
+      troubleshooting Linux systems, deploying containerised services, and
+      automating operational tasks using Python and Bash. Maintains a
+      self-hosted Ubuntu server running production-like infrastructure.
+      Strong foundation in OS internals, networking, and log-driven debugging
+      built through real incident investigation across system daemons,
+      network services, and application stacks.
+    tags: [linux, sysadmin, devops, infra]
+  networking_support:
+    text: >-
+      Computer Science student with hands-on experience troubleshooting Linux
+      systems and networking infrastructure, from diagnosing driver-level
+      crashes to debugging service failures across a self-hosted server
+      environment. Comfortable working across the OSI stack, with practical
+      exposure to RESTful APIs and SQL. Strong communicator with a
+      systematic, ownership-driven approach to isolating and resolving issues.
+    tags: [networking, support, troubleshooting, helpdesk]
+
+projects:
+  - id: pdf_viewer
+    title: "Linux Native PDF Viewer"
+    tagline: "Developing a Linux-native PDF viewer focused on document handling and printing workflows."
+    dates: "Dec 2025 -- Present"
+    tech: ["C", "Poppler", "Qt6", "Linux"]
+    tags: [systems, linux, desktop-app, c]
+    bullet_variants:
+      - "Implemented PDF rendering and print pipeline control using Poppler and Qt6."
+      - "Strengthened understanding of system-level application development and file handling."
+      - "Implemented rendering and print pipeline control using Poppler and Qt6; deepened knowledge of system-level application development."
+
+  - id: self_hosted_infra
+    title: "Self-Hosted Infrastructure"
+    tagline: "Personal server environment with containerized services and automated deployment."
+    dates: "Feb 2025 -- Present"
+    tech:
+      ["Docker", "Nginx", "Linux (Ubuntu Server)", "SSH", "Tailscale", "Bash"]
+    tags: [devops, docker, infra, linux, networking]
+    bullet_variants:
+      - "Automated deployment and service management using Docker and Nginx."
+      - "Improved reliability and remote accessibility through proper service orchestration."
+      - "Gained experience in system configuration, networking, and service orchestration."
+      - "Deployed and maintain 6+ services (file sync, media server, dashboards) using Docker Compose with Nginx as a reverse proxy handling TLS termination and traffic routing."
+      - "Wrote Bash scripts for log rotation, container health checks, and automatic service restart on failure, reducing manual intervention."
+
+  - id: arch_linux_sysadmin
+    title: "Linux Systems Administration (Arch Linux)"
+    tagline: "Maintaining an Arch Linux environment, responsible for all configuration, upgrades, and incident resolution."
+    dates: "2024 -- Present"
+    tech: ["Arch Linux", "systemd", "journalctl", "Wayland", "D-Bus", "Bash"]
+    tags: [linux, sysadmin, troubleshooting, debugging]
+    bullet_variants:
+      - "Diagnosed and resolved Wayland compositor crashes by reading protocol debug traces and systemd journal output, identifying conflicts at the compositor-GPU driver level."
+      - "Debugged power management failures by tracing D-Bus messages and correlating kernel logs, applying a targeted systemd unit fix without data loss."
+      - "Routinely performs first-level triage across OS, display stack, and network issues -- reading logs, isolating fault domains, and applying or escalating fixes."
+
+  - id: network_intrusion_detection
+    title: "Network Intrusion Detection System"
+    tagline: "Scalable distributed ML pipeline detecting network intrusions on a real 2-node cluster."
+    dates: "Apr 2026 -- May 2026"
+    tech: ["Python", "PySpark", "Hadoop", "Spark MLlib", "Streamlit"]
+    tags: [big-data, ml, distributed-systems, python, security]
+    bullet_variants:
+      - "Deployed Apache Spark 3.5 on a 2-node Hadoop HDFS cluster; ingested and processed 6.4 GB of CIC-IDS-2018 network flow data entirely in a distributed environment."
+      - "Engineered and evaluated 6 Random Forest model variants (binary, multiclass, weighted, cascade, SMOTE) achieving binary AUC-ROC of 0.9851 and multiclass weighted-F1 of 0.8365."
+      - "Built a live Streamlit monitoring dashboard replaying CIC-IDS-2017 traffic through the trained model in real time with per-class alert feed and rolling accuracy charts."
+
+  - id: weed_classification
+    title: "Weed Growth Stage Classification using Deep Learning"
+    tagline: "Agricultural AI system for automated weed growth stage classification to assist precision farming."
+    dates: "Aug 2025 -- Nov 2025"
+    tech: ["Python", "PyTorch", "OpenCV"]
+    tags: [ml, deep-learning, cv, python, published]
+    publication_id: weed_classification_paper
+    bullet_variants:
+      - "Benchmarked 10+ CNN and transformer architectures with attention mechanisms (CBAM, ECA, CA, SimAM)."
+      - "Achieved 95.77% test accuracy on 35,000+ images using 5-fold cross-validation."
+
+  - id: blockchain_messenger
+    title: "Blockchain Based Decentralized Messenger"
+    tagline: "Peer-to-peer encrypted messenger; eliminates central servers for secure communication."
+    dates: "Apr 2024"
+    tech: ["Java", "RSA", "SHA-256", "Multicast Sockets", "OOP"]
+    tags: [java, security, networking, published]
+    publication_id: blockchain_messenger_paper
+    bullet_variants:
+      - "Built entirely in Core Java using OOP principles; modular architecture covering messaging, encryption, and peer discovery."
+      - "Implemented end-to-end encryption using RSA and SHA-256; used Java multicast sockets (UDP) for real-time serverless group messaging."
+      - "Designed a blockchain-inspired append-only message log ensuring tamper-evident communication."
+      - "Eliminated centralized servers, enhancing security and privacy."
+      - "Utilized multicast sockets for efficient message delivery."
+
+  - id: password_manager
+    title: "Password Manager"
+    tagline: "GUI-based tool to securely store and encrypt credentials."
+    dates: "Nov 2022"
+    tech: ["Python", "Tkinter", "MySQL", "Cryptography"]
+    tags: [python, security, gui]
+    bullet_variants:
+      - "Encrypts stored passwords for enhanced security."
+      - "Provides an intuitive GUI for easy access and management."
+
+# Skills master list. LLM reorders within each category to surface JD-relevant ones first;
+# does not need to invent new ones.
+skills:
+  Languages: ["Python", "C++", "C", "Java", "SQL", "Bash"]
+  Java_Concepts:
+    [
+      "OOP",
+      "Multithreading",
+      "Socket Programming",
+      "Cryptography (RSA/SHA-256)",
+      "Data Structures & Algorithms",
+    ]
+  Big_Data: ["Apache Spark", "Hadoop HDFS", "PySpark", "Spark MLlib"]
+  Frameworks: ["Django", "Qt6", "Tkinter", "Flask"]
+  Tools_and_Technologies:
+    ["Git", "Docker", "Docker Compose", "Linux", "Nginx", "SSH"]
+  Operating_Systems: ["Linux (Arch, Ubuntu Server)", "Windows"]
+  Monitoring_and_Debugging:
+    [
+      "systemd/journalctl",
+      "Wayland protocol logs",
+      "Docker logs",
+      "process tracing",
+    ]
+  Networking:
+    [
+      "TCP/IP",
+      "DNS",
+      "HTTP/REST",
+      "OSI stack fundamentals",
+      "VPN tunnelling",
+      "port management",
+    ]
+  DBMS: ["MySQL"]
+  Key_Concepts:
+    ["Data Structures", "OS Internals", "Computer Networks", "Algorithms"]
+
+publications:
+  - id: blockchain_messenger_paper
+    title: "Blockchain-Based Communicator with Multicast Transmission"
+    venue: "2024 8th International Conference on Computational System and Information Technology for Sustainable Solutions (CSITSS), 2024"
+    related_project: blockchain_messenger
+  - id: weed_classification_paper
+    title: "Weed Growth Stage Classification"
+    venue: "2026 International Conference on Signal, Systems, and Computing for Next-Gen Automation (ICSSCNA), 2026"
+    related_project: weed_classification
