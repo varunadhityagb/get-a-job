@@ -3,6 +3,7 @@ Ported from the original llm_select.py CLI script.
 Same logic, exposed as functions the FastAPI backend can call directly
 instead of shelling out.
 """
+
 import json
 import os
 import subprocess
@@ -59,6 +60,8 @@ HARD RULES (do not break these):
     *skill/domain keywords* only insofar as the candidate's actual
     projects support them (e.g. "distributed systems", "real-time
     monitoring") — never the company's product description.
+  * The summary should answer one question:
+    "Who is [Me] as a [Role] in [Company]?", not "What did one of his/her projects achieve?"
   * Tone: plain, factual, resume-register. Not a cover letter. If a
     sentence would sound at home in a cover letter's closing paragraph,
     it does not belong here.
@@ -85,6 +88,7 @@ exact shape:
   "publications_to_include": ["publication_id", ...]
 }
 """
+
 
 def extract_jd_text(jd_path: Path) -> str:
     if jd_path.suffix.lower() == ".pdf":
@@ -129,7 +133,9 @@ def call_llm_ollama(system_prompt: str, user_content: str, model: str) -> str:
     return resp.json()["message"]["content"]
 
 
-def call_llm_cloud(system_prompt: str, user_content: str, model: str = "claude-sonnet-4-6") -> str:
+def call_llm_cloud(
+    system_prompt: str, user_content: str, model: str = "claude-sonnet-4-6"
+) -> str:
     import anthropic
 
     client = anthropic.Anthropic()  # expects ANTHROPIC_API_KEY in env
