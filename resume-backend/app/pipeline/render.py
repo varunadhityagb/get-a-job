@@ -1,4 +1,5 @@
 """Ported from render.py — merges tailored dict + data.yaml into the .tex template."""
+
 import re
 import sys
 from pathlib import Path
@@ -24,10 +25,16 @@ def esc(text: str) -> str:
     return _SPECIAL_RE.sub(lambda m: SPECIAL_CHARS[m.group(0)], text)
 
 
-def replace_between(content: str, start_marker: str, end_marker: str, new_body: str) -> str:
-    pattern = re.compile(re.escape(start_marker) + r".*?(?=" + re.escape(end_marker) + r")", re.DOTALL)
+def replace_between(
+    content: str, start_marker: str, end_marker: str, new_body: str
+) -> str:
+    pattern = re.compile(
+        re.escape(start_marker) + r".*?(?=" + re.escape(end_marker) + r")", re.DOTALL
+    )
     if not pattern.search(content):
-        raise ValueError(f"Could not find region between {start_marker!r} and {end_marker!r} in template.")
+        raise ValueError(
+            f"Could not find region between {start_marker!r} and {end_marker!r} in template."
+        )
     replacement = start_marker + "\n" + new_body + "\n"
     return pattern.sub(lambda m: replacement, content, count=1)
 
@@ -102,33 +109,72 @@ def build_publications_block(pub_ids, pubs_by_id) -> str:
     return "\n".join(lines)
 
 
-def run_render(tailored: dict, data_yaml_path: Path, template_path: Path, out_tex_path: Path) -> Path:
+def build_certifications_block(certs) -> str:
+    if not certs:
+        return "\\section{Certifications}\n \\resumeSubHeadingListStart\n \\resumeSubHeadingListEnd\n"
+    lines = ["\\section{Certifications}", " \\resumeSubHeadingListStart"]
+    for c in certs:
+        name = esc(c["name"])
+        issuer = esc(c.get("issuer", ""))
+        lines.append(f"    \\resumeItem{{{name}}}{{ --- {issuer}}}\\\\")
+        if c.get("url"):
+            lines.append(
+                f"      {{\\footnotesize \\href{{{c['url']}}}{{View Certificate}}}}"
+            )
+    lines.append(" \\resumeSubHeadingListEnd")
+    lines.append("")
+    return "\n".join(lines)
+
+
+def run_render(
+    tailored: dict, data_yaml_path: Path, template_path: Path, out_tex_path: Path
+) -> Path:
     resume_data = yaml.safe_load(data_yaml_path.read_text())
     template = template_path.read_text()
 
     projects_by_id = {p["id"]: p for p in resume_data["projects"]}
     pubs_by_id = {p["id"]: p for p in resume_data.get("publications", [])}
 
-    missing = [p["id"] for p in tailored["selected_projects"] if p["id"] not in projects_by_id]
+    missing = [
+        p["id"] for p in tailored["selected_projects"] if p["id"] not in projects_by_id
+    ]
     if missing:
-        raise ValueError(f"Unknown project id(s) in tailored data: {missing}. Run validate first.")
+        raise ValueError(
+            f"Unknown project id(s) in tailored data: {missing}. Run validate first."
+        )
 
     content = template
     content = replace_between(
-        content, "%----------SUMMARY-----------------", "%----------EDUCATION-----------------",
+        content,
+        "%----------SUMMARY-----------------",
+        "%----------EDUCATION-----------------",
         build_summary_block(tailored["summary"]),
     )
     content = replace_between(
-        content, "%-----------PROJECTS-----------------", "%-----------SKILLS-----------------",
+        content,
+        "%-----------PROJECTS-----------------",
+        "%-----------SKILLS-----------------",
         build_projects_block(tailored["selected_projects"], projects_by_id),
     )
     content = replace_between(
-        content, "%-----------SKILLS-----------------", "%-----------PUBLICATIONS-----------------",
+        content,
+        "%-----------SKILLS-----------------",
+        "%-----------CERTIFICATIONS-----------------",
         build_skills_block(tailored["skills_ordered"]),
     )
     content = replace_between(
-        content, "%-----------PUBLICATIONS-----------------", "\\end{document}",
-        build_publications_block(tailored.get("publications_to_include", []), pubs_by_id),
+        content,
+        "%-----------CERTIFICATIONS-----------------",
+        "%-----------PUBLICATIONS-----------------",
+        build_certifications_block(resume_data.get("certifications", [])),
+    )
+    content = replace_between(
+        content,
+        "%-----------PUBLICATIONS-----------------",
+        "\\end{document}",
+        build_publications_block(
+            tailored.get("publications_to_include", []), pubs_by_id
+        ),
     )
 
     out_tex_path.write_text(content)

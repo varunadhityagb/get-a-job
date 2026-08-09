@@ -6,7 +6,15 @@ import uuid
 from pathlib import Path
 from typing import Optional
 
-from fastapi import BackgroundTasks, Depends, FastAPI, File, Form, HTTPException, UploadFile
+from fastapi import (
+    BackgroundTasks,
+    Depends,
+    FastAPI,
+    File,
+    Form,
+    HTTPException,
+    UploadFile,
+)
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, StreamingResponse
 from sqlmodel import Session, select
@@ -37,6 +45,7 @@ def on_startup():
 
 # ---------- Ollama models ----------
 
+
 @app.get("/api/ollama/models")
 def get_ollama_models():
     try:
@@ -47,6 +56,7 @@ def get_ollama_models():
 
 # ---------- resume_data.yaml editing ----------
 
+
 @app.get("/api/resume-data/status")
 def resume_data_status():
     return {"exists": RESUME_DATA_YAML.exists()}
@@ -55,7 +65,9 @@ def resume_data_status():
 @app.get("/api/resume-data")
 def get_resume_data():
     if not RESUME_DATA_YAML.exists():
-        raise HTTPException(status_code=404, detail="data.yaml not found on server yet.")
+        raise HTTPException(
+            status_code=404, detail="data.yaml not found on server yet."
+        )
     return {"content": RESUME_DATA_YAML.read_text()}
 
 
@@ -90,7 +102,9 @@ def _validate_yaml_text(content: str) -> None:
     except _yaml.YAMLError as e:
         raise HTTPException(status_code=400, detail=f"Invalid YAML: {e}")
     if not isinstance(parsed, dict):
-        raise HTTPException(status_code=400, detail="YAML must parse to a top-level mapping.")
+        raise HTTPException(
+            status_code=400, detail="YAML must parse to a top-level mapping."
+        )
     # Soft check, not a hard requirement — the pipeline scripts will fail
     # loudly and specifically later if a key is actually missing, but this
     # catches an obviously-wrong file (e.g. someone uploads a JD by mistake)
@@ -111,6 +125,7 @@ REQUIRED_TEX_MARKERS = [
     "%----------EDUCATION-----------------",
     "%-----------PROJECTS-----------------",
     "%-----------SKILLS-----------------",
+    "%-----------CERTIFICATIONS-----------------",
     "%-----------PUBLICATIONS-----------------",
     "\\end{document}",
 ]
@@ -124,7 +139,9 @@ def template_status():
 @app.get("/api/template")
 def get_template():
     if not TEX_TEMPLATE.exists():
-        raise HTTPException(status_code=404, detail="resume_template.tex not found on server yet.")
+        raise HTTPException(
+            status_code=404, detail="resume_template.tex not found on server yet."
+        )
     return {"content": TEX_TEMPLATE.read_text()}
 
 
@@ -154,13 +171,16 @@ async def upload_template(file: UploadFile = File(...), overwrite: bool = False)
 
 # ---------- generation pipeline ----------
 
+
 def _run_pipeline_job(generation_id: int, jd_path: Path, model: str, use_cloud: bool):
     from .db import engine
 
     with Session(engine) as session:
         gen = session.get(ResumeGeneration, generation_id)
         try:
-            tailored, jd_text = run_select(jd_path, RESUME_DATA_YAML, model=model, use_cloud=use_cloud)
+            tailored, jd_text = run_select(
+                jd_path, RESUME_DATA_YAML, model=model, use_cloud=use_cloud
+            )
             tailored, problems = run_validate(tailored, RESUME_DATA_YAML, strict=False)
 
             gen_dir = RESUME_DIR / str(generation_id)
@@ -170,12 +190,12 @@ def _run_pipeline_job(generation_id: int, jd_path: Path, model: str, use_cloud: 
             pdf_path = compile_pdf(tex_path)
 
             initial_version = TexVersion(
-                            generation_id=generation_id,
-                            label="generated",
-                            tex_path=str(tex_path),
-                            pdf_path=str(pdf_path),
-                            compiled=True,
-                        )
+                generation_id=generation_id,
+                label="generated",
+                tex_path=str(tex_path),
+                pdf_path=str(pdf_path),
+                compiled=True,
+            )
             session.add(initial_version)
 
             jd_sub = session.get(JDSubmission, gen.jd_submission_id)
@@ -187,7 +207,9 @@ def _run_pipeline_job(generation_id: int, jd_path: Path, model: str, use_cloud: 
             gen.resume_pdf_path = str(pdf_path)
             gen.status = "done"
             if problems:
-                gen.error_message = "Auto-stripped ungrounded content:\n" + "\n".join(problems)
+                gen.error_message = "Auto-stripped ungrounded content:\n" + "\n".join(
+                    problems
+                )
         except Exception as e:
             gen.status = "failed"
             gen.error_message = str(e)
@@ -207,9 +229,15 @@ def generate(
     session: Session = Depends(get_session),
 ):
     if not RESUME_DATA_YAML.exists():
-        raise HTTPException(status_code=409, detail="No data.yaml uploaded yet — upload one on the Resume Data page first.")
+        raise HTTPException(
+            status_code=409,
+            detail="No data.yaml uploaded yet — upload one on the Resume Data page first.",
+        )
     if not TEX_TEMPLATE.exists():
-        raise HTTPException(status_code=409, detail="No resume template uploaded yet — upload one on the Resume Data page first.")
+        raise HTTPException(
+            status_code=409,
+            detail="No resume template uploaded yet — upload one on the Resume Data page first.",
+        )
 
     company = Company(name=company_name, category=category, package=package)
     session.add(company)
@@ -244,9 +272,12 @@ def generate(
 
 # ---------- history ----------
 
+
 @app.get("/api/generations")
 def list_generations(session: Session = Depends(get_session)):
-    gens = session.exec(select(ResumeGeneration).order_by(ResumeGeneration.created_at.desc())).all()
+    gens = session.exec(
+        select(ResumeGeneration).order_by(ResumeGeneration.created_at.desc())
+    ).all()
     out = []
     for gen in gens:
         jd_sub = session.get(JDSubmission, gen.jd_submission_id)
@@ -310,6 +341,7 @@ def get_generation_jd(generation_id: int, session: Session = Depends(get_session
 
 # ---------- export ----------
 
+
 @app.get("/api/export")
 def export_data(format: str = "json", session: Session = Depends(get_session)):
     companies = session.exec(select(Company)).all()
@@ -320,8 +352,16 @@ def export_data(format: str = "json", session: Session = Depends(get_session)):
         buf = io.StringIO()
         writer = csv.writer(buf)
         writer.writerow(
-            ["generation_id", "status", "company", "category", "package",
-             "model_used", "created_at", "resume_pdf_path"]
+            [
+                "generation_id",
+                "status",
+                "company",
+                "category",
+                "package",
+                "model_used",
+                "created_at",
+                "resume_pdf_path",
+            ]
         )
         jd_by_id = {j.id: j for j in jd_subs}
         company_by_id = {c.id: c for c in companies}
@@ -329,13 +369,21 @@ def export_data(format: str = "json", session: Session = Depends(get_session)):
             jd_sub = jd_by_id.get(gen.jd_submission_id)
             company = company_by_id.get(jd_sub.company_id) if jd_sub else None
             writer.writerow(
-                [gen.id, gen.status, company.name if company else "", company.category if company else "",
-                 company.package if company else "", jd_sub.ollama_model_used if jd_sub else "",
-                 gen.created_at, gen.resume_pdf_path or ""]
+                [
+                    gen.id,
+                    gen.status,
+                    company.name if company else "",
+                    company.category if company else "",
+                    company.package if company else "",
+                    jd_sub.ollama_model_used if jd_sub else "",
+                    gen.created_at,
+                    gen.resume_pdf_path or "",
+                ]
             )
         buf.seek(0)
         return StreamingResponse(
-            buf, media_type="text/csv",
+            buf,
+            media_type="text/csv",
             headers={"Content-Disposition": "attachment; filename=export.csv"},
         )
 
@@ -345,12 +393,16 @@ def export_data(format: str = "json", session: Session = Depends(get_session)):
         "generations": [g.model_dump() for g in gens],
     }
 
+
 # ---------- tex versions ----------
+
 
 @app.get("/api/generations/{generation_id}/versions")
 def list_versions(generation_id: int, session: Session = Depends(get_session)):
     versions = session.exec(
-        select(TexVersion).where(TexVersion.generation_id == generation_id).order_by(TexVersion.id)
+        select(TexVersion)
+        .where(TexVersion.generation_id == generation_id)
+        .order_by(TexVersion.id)
     ).all()
 
     if not versions:
@@ -361,7 +413,9 @@ def list_versions(generation_id: int, session: Session = Depends(get_session)):
                 label="generated",
                 tex_path=gen.resume_tex_path,
                 pdf_path=gen.resume_pdf_path,
-                compiled=bool(gen.resume_pdf_path and Path(gen.resume_pdf_path).exists()),
+                compiled=bool(
+                    gen.resume_pdf_path and Path(gen.resume_pdf_path).exists()
+                ),
             )
             session.add(backfilled)
             session.commit()
@@ -372,7 +426,9 @@ def list_versions(generation_id: int, session: Session = Depends(get_session)):
 
 
 @app.get("/api/generations/{generation_id}/versions/{version_id}/tex")
-def get_version_tex(generation_id: int, version_id: int, session: Session = Depends(get_session)):
+def get_version_tex(
+    generation_id: int, version_id: int, session: Session = Depends(get_session)
+):
     v = session.get(TexVersion, version_id)
     if not v or v.generation_id != generation_id:
         raise HTTPException(status_code=404, detail="Version not found")
@@ -380,7 +436,9 @@ def get_version_tex(generation_id: int, version_id: int, session: Session = Depe
 
 
 @app.post("/api/generations/{generation_id}/versions")
-def create_version(generation_id: int, payload: dict, session: Session = Depends(get_session)):
+def create_version(
+    generation_id: int, payload: dict, session: Session = Depends(get_session)
+):
     """Saves edited LaTeX as a new version (edit1, edit2, ...). Does NOT compile —
     call the compile endpoint separately so editing never silently recompiles."""
     content = payload.get("content")
@@ -395,7 +453,9 @@ def create_version(generation_id: int, payload: dict, session: Session = Depends
         select(TexVersion).where(TexVersion.generation_id == generation_id)
     ).all()
     edit_nums = [
-        int(v.label[4:]) for v in existing if v.label.startswith("edit") and v.label[4:].isdigit()
+        int(v.label[4:])
+        for v in existing
+        if v.label.startswith("edit") and v.label[4:].isdigit()
     ]
     label = f"edit{max(edit_nums, default=0) + 1}"
 
@@ -404,7 +464,9 @@ def create_version(generation_id: int, payload: dict, session: Session = Depends
     tex_path = gen_dir / f"{label}.tex"
     tex_path.write_text(content)
 
-    version = TexVersion(generation_id=generation_id, label=label, tex_path=str(tex_path))
+    version = TexVersion(
+        generation_id=generation_id, label=label, tex_path=str(tex_path)
+    )
     session.add(version)
     session.commit()
     session.refresh(version)
@@ -412,7 +474,9 @@ def create_version(generation_id: int, payload: dict, session: Session = Depends
 
 
 @app.post("/api/generations/{generation_id}/versions/{version_id}/compile")
-def compile_version(generation_id: int, version_id: int, session: Session = Depends(get_session)):
+def compile_version(
+    generation_id: int, version_id: int, session: Session = Depends(get_session)
+):
     """Recompiles this version's .tex in place. Overwrites this version's own PDF —
     never creates a new version or a new PDF file, so re-running is idempotent."""
     v = session.get(TexVersion, version_id)
@@ -430,10 +494,14 @@ def compile_version(generation_id: int, version_id: int, session: Session = Depe
 
 
 @app.get("/api/generations/{generation_id}/versions/{version_id}/pdf")
-def get_version_pdf(generation_id: int, version_id: int, session: Session = Depends(get_session)):
+def get_version_pdf(
+    generation_id: int, version_id: int, session: Session = Depends(get_session)
+):
     v = session.get(TexVersion, version_id)
     if not v or v.generation_id != generation_id:
         raise HTTPException(status_code=404, detail="Version not found")
     if not v.pdf_path or not Path(v.pdf_path).exists():
-        raise HTTPException(status_code=404, detail="Not compiled yet — hit Compile first.")
+        raise HTTPException(
+            status_code=404, detail="Not compiled yet — hit Compile first."
+        )
     return FileResponse(v.pdf_path, media_type="application/pdf")

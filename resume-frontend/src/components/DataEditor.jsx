@@ -17,9 +17,13 @@ const theme = EditorView.theme(
   {
     "&": { fontSize: "13px", fontFamily: "var(--font-mono)" },
     ".cm-content": { caretColor: "#b8925a" },
-    ".cm-gutters": { backgroundColor: "#161b23", color: "#5c6577", border: "none" },
+    ".cm-gutters": {
+      backgroundColor: "#161b23",
+      color: "#5c6577",
+      border: "none",
+    },
   },
-  { dark: true }
+  { dark: true },
 );
 
 const REQUIRED_MARKERS = [
@@ -27,6 +31,7 @@ const REQUIRED_MARKERS = [
   "%----------EDUCATION-----------------",
   "%-----------PROJECTS-----------------",
   "%-----------SKILLS-----------------",
+  "%-----------CERTIFICATIONS-----------------",
   "%-----------PUBLICATIONS-----------------",
   "\\end{document}",
 ];
@@ -46,7 +51,10 @@ export default function DataEditor() {
   async function refreshStatus() {
     setChecking(true);
     try {
-      const [de, te] = await Promise.all([getResumeDataStatus(), getTemplateStatus()]);
+      const [de, te] = await Promise.all([
+        getResumeDataStatus(),
+        getTemplateStatus(),
+      ]);
       setDataExists(de);
       setTemplateExists(te);
     } catch (e) {
@@ -102,8 +110,9 @@ export default function DataEditor() {
       <div>
         <h1 className="page-title">Resume data</h1>
         <p className="page-subtitle">
-          First run — upload your resume data and LaTeX template to get started. Both are stored on the
-          server and can be edited or replaced later from this page.
+          First run — upload your resume data and LaTeX template to get started.
+          Both are stored on the server and can be edited or replaced later from
+          this page.
         </p>
 
         <div style={{ display: "grid", gap: 20 }}>
@@ -123,8 +132,10 @@ export default function DataEditor() {
               title="LaTeX template"
               hint={
                 <>
-                  Any <code className="mono">.tex</code> file works, as long as it contains the marker
-                  comments <code className="mono">render.py</code> uses to know where to write:
+                  Any <code className="mono">.tex</code> file works, as long as
+                  it contains the marker comments{" "}
+                  <code className="mono">render.py</code> uses to know where to
+                  write:
                   <ul className="marker-list">
                     {REQUIRED_MARKERS.map((m) => (
                       <li key={m}>
@@ -132,7 +143,8 @@ export default function DataEditor() {
                       </li>
                     ))}
                   </ul>
-                  A template missing any of these is rejected and you're told which.
+                  A template missing any of these is rejected and you're told
+                  which.
                 </>
               }
               accept=".tex"
@@ -146,8 +158,8 @@ export default function DataEditor() {
 
         {error && (
           <div className="error-box" style={{ marginTop: 20 }}>
-            Couldn't check setup status — the backend may not be running, or may need a rebuild
-            (detail: {error}).
+            Couldn't check setup status — the backend may not be running, or may
+            need a rebuild (detail: {error}).
           </div>
         )}
       </div>
@@ -158,13 +170,18 @@ export default function DataEditor() {
     <div>
       <h1 className="page-title">Resume data</h1>
       <p className="page-subtitle">
-        The ground truth — every project, skill, and metric the model is allowed to draw from. Edited directly,
-        no round-trip through a file manager.
+        The ground truth — every project, skill, and metric the model is allowed
+        to draw from. Edited directly, no round-trip through a file manager.
       </p>
 
       <div className="editor-toolbar">
-        <button className="btn-ghost" onClick={() => setShowTemplateSection((s) => !s)}>
-          {showTemplateSection ? "Hide template upload" : "Replace LaTeX template…"}
+        <button
+          className="btn-ghost"
+          onClick={() => setShowTemplateSection((s) => !s)}
+        >
+          {showTemplateSection
+            ? "Hide template upload"
+            : "Replace LaTeX template…"}
         </button>
         <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
           <span className="save-status">
@@ -174,7 +191,11 @@ export default function DataEditor() {
             {saveState === "idle" && dirty && "Unsaved changes"}
             {saveState === "idle" && !dirty && "Up to date"}
           </span>
-          <button className="btn-primary" onClick={handleSave} disabled={!dirty || saveState === "saving"}>
+          <button
+            className="btn-primary"
+            onClick={handleSave}
+            disabled={!dirty || saveState === "saving"}
+          >
             Save changes
           </button>
         </div>
