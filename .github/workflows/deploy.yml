@@ -1,0 +1,38 @@
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:   # lets you manually trigger a run from the Actions tab, useful for testing
+
+jobs:
+  deploy:
+    runs-on: self-hosted
+    steps:
+      - name: Checkout latest code
+        uses: actions/checkout@v4
+
+      - name: Rebuild and restart containers
+        working-directory: resume-deploy
+        run: |
+          docker compose down
+          docker compose up -d --build
+
+      - name: Wait for backend to come up
+        run: |
+          for i in $(seq 1 20); do
+            if curl -sf http://localhost:8010/api/resume-data/status > /dev/null; then
+              echo "Backend is up."
+              exit 0
+            fi
+            echo "Waiting for backend... ($i/20)"
+            sleep 3
+          done
+          echo "Backend did not come up in time."
+          exit 1
+
+      - name: Show recent logs on failure
+        if: failure()
+        run: |
+          cd resume-deploy
+          docker compose logs --tail=80
