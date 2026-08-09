@@ -133,6 +133,22 @@ def call_llm_ollama(system_prompt: str, user_content: str, model: str) -> str:
     return resp.json()["message"]["content"]
 
 
+def call_llm_ollama_raw(system_prompt: str, user_content: str, model: str) -> str:
+    resp = requests.post(
+        f"{OLLAMA_BASE_URL}/api/chat",
+        json={
+            "model": model,
+            "messages": [{"role": "system", "content": system_prompt},
+                         {"role": "user", "content": user_content}],
+            "stream": False,
+            "options": {"num_ctx": 8192},
+        },
+        timeout=600,
+    )
+    resp.raise_for_status()
+    return resp.json()["message"]["content"]
+
+
 def call_llm_cloud(
     system_prompt: str, user_content: str, model: str = "claude-sonnet-4-6"
 ) -> str:

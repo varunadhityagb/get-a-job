@@ -31,6 +31,8 @@ class ResumeGeneration(SQLModel, table=True):
     status: str = "pending"  # pending | done | failed
     error_message: Optional[str] = None
     created_at: datetime = Field(default_factory=datetime.utcnow)
+    failure_stage: Optional[str] = None  # "jd_or_llm" | "render" | "compile"
+
 
 class TexVersion(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)

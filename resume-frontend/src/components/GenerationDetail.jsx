@@ -11,10 +11,12 @@ import {
   getVersionTex,
   createVersion,
   compileVersion,
+  fixVersion,
   versionPdfUrl,
 } from "../api";
 import StatusStamp from "./StatusStamp";
 import Spinner from "./Spinner";
+import RetryWithNewJD from "./RetryWithNewJD";
 
 // Local models can take minutes; give the "pending" state something honest
 // to say rather than a static sentence, without pretending to know real
@@ -30,9 +32,13 @@ const texTheme = EditorView.theme(
   {
     "&": { fontSize: "12.5px", fontFamily: "var(--font-mono)" },
     ".cm-content": { caretColor: "#b8925a" },
-    ".cm-gutters": { backgroundColor: "#161b23", color: "#5c6577", border: "none" },
+    ".cm-gutters": {
+      backgroundColor: "#161b23",
+      color: "#5c6577",
+      border: "none",
+    },
   },
-  { dark: true }
+  { dark: true },
 );
 
 export default function GenerationDetail({ id, onBack }) {
@@ -51,6 +57,7 @@ export default function GenerationDetail({ id, onBack }) {
   const [compiling, setCompiling] = useState(false);
   const [versionError, setVersionError] = useState(null);
   const [versionsLoading, setVersionsLoading] = useState(false);
+  const [fixing, setFixing] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -63,7 +70,12 @@ export default function GenerationDetail({ id, onBack }) {
         setData(d);
         if (d.generation.status === "pending") {
           elapsed.current += 3;
-          setStageIdx(Math.min(Math.floor(elapsed.current / 20), PENDING_STAGES.length - 1));
+          setStageIdx(
+            Math.min(
+              Math.floor(elapsed.current / 20),
+              PENDING_STAGES.length - 1,
+            ),
+          );
           timer = setTimeout(poll, 3000);
         }
       } catch (e) {
@@ -77,7 +89,7 @@ export default function GenerationDetail({ id, onBack }) {
     };
   }, [id]);
 
-  async function loadVersion(versionId, list) {
+  async function loadVersion(versionId) {
     setActiveVersionId(versionId);
     try {
       const content = await getVersionTex(id, versionId);
@@ -97,7 +109,7 @@ export default function GenerationDetail({ id, onBack }) {
       const target = preferId
         ? list.find((v) => v.id === preferId)
         : list[list.length - 1];
-      if (target) await loadVersion(target.id, list);
+      if (target) await loadVersion(target.id);
     } catch (e) {
       setVersionError(e.message);
     } finally {
@@ -105,8 +117,15 @@ export default function GenerationDetail({ id, onBack }) {
     }
   }
 
+  // Load versions once we have either a done or a failed generation —
+  // failed ones may still have a tex version worth editing (render/compile
+  // failures always leave one; jd_or_llm failures never do).
   useEffect(() => {
-    if (data?.generation.status === "done" && versions.length === 0) {
+    if (
+      (data?.generation.status === "done" ||
+        data?.generation.status === "failed") &&
+      versions.length === 0
+    ) {
       refreshVersions();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -141,6 +160,19 @@ export default function GenerationDetail({ id, onBack }) {
     }
   }
 
+  async function handleFixWithAI() {
+    setFixing(true);
+    setVersionError(null);
+    try {
+      const v = await fixVersion(id, activeVersionId, { useCloud: true });
+      await refreshVersions(v.id);
+    } catch (e) {
+      setVersionError(e.message);
+    } finally {
+      setFixing(false);
+    }
+  }
+
   if (error) return <div className="error-box">{error}</div>;
   if (!data)
     return (
@@ -150,10 +182,16 @@ export default function GenerationDetail({ id, onBack }) {
     );
 
   const { generation, company, jd_submission } = data;
+  const showTabs =
+    generation.status === "done" || generation.status === "failed";
 
-return (
+  return (
     <div>
-      <button className="btn-ghost" onClick={onBack} style={{ marginBottom: 20 }}>
+      <button
+        className="btn-ghost"
+        onClick={onBack}
+        style={{ marginBottom: 20 }}
+      >
         ← Back to history
       </button>
 
@@ -161,7 +199,8 @@ return (
         <div>
           <h1 className="page-title">{company?.name || "Unknown company"}</h1>
           <p className="page-subtitle">
-            {jd_submission?.ollama_model_used || "cloud model"} · {new Date(generation.created_at).toLocaleString()}
+            {jd_submission?.ollama_model_used || "cloud model"} ·{" "}
+            {new Date(generation.created_at).toLocaleString()}
           </p>
         </div>
         <StatusStamp status={generation.status} />
@@ -170,25 +209,56 @@ return (
       {generation.status === "pending" && (
         <div className="card" style={{ marginBottom: 20 }}>
           <Spinner label={PENDING_STAGES[stageIdx]} />
-          <p className="page-subtitle" style={{ marginTop: 12, marginBottom: 0 }}>
-            Local models can take a few minutes on CPU. This page checks progress every few seconds
-            — safe to leave open or come back to it from History.
+          <p
+            className="page-subtitle"
+            style={{ marginTop: 12, marginBottom: 0 }}
+          >
+            Local models can take a few minutes on CPU. This page checks
+            progress every few seconds — safe to leave open or come back to it
+            from History.
           </p>
         </div>
       )}
 
-      {generation.status === "failed" && generation.error_message && (
-        <div className="error-box">{generation.error_message}</div>
+      {generation.status === "failed" && (
+        <div className="card" style={{ marginBottom: 20 }}>
+          <div className="error-box">{generation.error_message}</div>
+
+          {generation.failure_stage === "jd_or_llm" && (
+            <RetryWithNewJD
+              id={id}
+              onRetried={() => window.location.reload()}
+            />
+          )}
+          {(generation.failure_stage === "compile" ||
+            generation.failure_stage === "render") &&
+            versions.length > 0 && (
+              <p
+                className="page-subtitle"
+                style={{ marginTop: 12, marginBottom: 0 }}
+              >
+                Open the <b>LaTeX editor</b> tab below — you can edit it by
+                hand, or click <b>Fix with AI</b> to send the error log back to
+                the model.
+              </p>
+            )}
+        </div>
       )}
 
-      {generation.status === "done" && (
-        <>
-          {generation.error_message && <div className="error-box">{generation.error_message}</div>}
+      {generation.status === "done" && generation.error_message && (
+        <div className="error-box" style={{ marginBottom: 20 }}>
+          {generation.error_message}
+        </div>
+      )}
 
+      {showTabs && (
+        <>
           <div className="detail-grid">
             <div>
               <div className="detail-label">Category</div>
-              <div className="detail-value mono">{company?.category || "—"}</div>
+              <div className="detail-value mono">
+                {company?.category || "—"}
+              </div>
             </div>
             <div>
               <div className="detail-label">Package</div>
@@ -205,7 +275,11 @@ return (
               <button
                 key={key}
                 className="btn-ghost"
-                style={tab === key ? { borderColor: "var(--accent)", color: "var(--text)" } : {}}
+                style={
+                  tab === key
+                    ? { borderColor: "var(--accent)", color: "var(--text)" }
+                    : {}
+                }
                 onClick={() => setTab(key)}
               >
                 {label}
@@ -213,13 +287,19 @@ return (
             ))}
           </div>
 
-          {tab === "resume" && (
-            <iframe
-              className="pdf-frame"
-              title="pdf-viewer"
-              src={generationPdfUrl(id)}
-            />
-          )}
+          {tab === "resume" &&
+            (generation.status === "done" ? (
+              <iframe
+                className="pdf-frame"
+                title="pdf-viewer"
+                src={generationPdfUrl(id)}
+              />
+            ) : (
+              <div className="empty-state">
+                No compiled resume for this generation — see the LaTeX editor
+                tab.
+              </div>
+            ))}
 
           {tab === "jd" && (
             <iframe
@@ -233,9 +313,19 @@ return (
             <div>
               {versionsLoading && versions.length === 0 ? (
                 <Spinner label="Loading versions…" />
+              ) : versions.length === 0 ? (
+                <div className="empty-state">
+                  No LaTeX version exists yet for this generation — it failed
+                  before rendering.
+                  {generation.failure_stage === "jd_or_llm" &&
+                    " Retry with a new JD above, once that succeeds a version will appear here."}
+                </div>
               ) : (
                 <>
-                  <div className="filter-row" style={{ marginBottom: 12, alignItems: "center" }}>
+                  <div
+                    className="filter-row"
+                    style={{ marginBottom: 12, alignItems: "center" }}
+                  >
                     <select
                       value={activeVersionId || ""}
                       onChange={(e) => loadVersion(Number(e.target.value))}
@@ -260,9 +350,18 @@ return (
                     >
                       {compiling ? "Compiling…" : "Compile"}
                     </button>
+                    <button
+                      className="btn-ghost"
+                      disabled={!activeVersionId || fixing}
+                      onClick={handleFixWithAI}
+                    >
+                      {fixing ? "Asking model to fix…" : "Fix with AI"}
+                    </button>
                   </div>
 
-                  {versionError && <div className="error-box">{versionError}</div>}
+                  {versionError && (
+                    <div className="error-box">{versionError}</div>
+                  )}
 
                   <div
                     style={{
@@ -294,8 +393,17 @@ return (
                         style={{ height: "70vh" }}
                       />
                     ) : (
-                      <div className="empty-state" style={{ height: "70vh", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                        Not compiled yet — click Compile to generate a PDF for this version.
+                      <div
+                        className="empty-state"
+                        style={{
+                          height: "70vh",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                        }}
+                      >
+                        Not compiled yet — click Compile to generate a PDF for
+                        this version.
                       </div>
                     )}
                   </div>

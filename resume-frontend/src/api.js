@@ -52,10 +52,13 @@ export async function putResumeData(content) {
 export async function uploadResumeData(file, overwrite = false) {
   const fd = new FormData();
   fd.append("file", file);
-  const res = await fetch(`${API_BASE}/api/resume-data/upload?overwrite=${overwrite}`, {
-    method: "POST",
-    body: fd,
-  });
+  const res = await fetch(
+    `${API_BASE}/api/resume-data/upload?overwrite=${overwrite}`,
+    {
+      method: "POST",
+      body: fd,
+    },
+  );
   await handle(res);
   return res.json();
 }
@@ -69,10 +72,13 @@ export async function getTemplateStatus() {
 export async function uploadTemplate(file, overwrite = false) {
   const fd = new FormData();
   fd.append("file", file);
-  const res = await fetch(`${API_BASE}/api/template/upload?overwrite=${overwrite}`, {
-    method: "POST",
-    body: fd,
-  });
+  const res = await fetch(
+    `${API_BASE}/api/template/upload?overwrite=${overwrite}`,
+    {
+      method: "POST",
+      body: fd,
+    },
+  );
   await handle(res);
   return res.json();
 }
@@ -86,7 +92,10 @@ export async function createGeneration(form) {
   fd.append("use_cloud", form.useCloud ? "true" : "false");
   fd.append("jd_file", form.jdFile);
 
-  const res = await fetch(`${API_BASE}/api/generate`, { method: "POST", body: fd });
+  const res = await fetch(`${API_BASE}/api/generate`, {
+    method: "POST",
+    body: fd,
+  });
   await handle(res);
   return res.json();
 }
@@ -128,7 +137,9 @@ export async function listVersions(genId) {
 }
 
 export async function getVersionTex(genId, versionId) {
-  const res = await fetch(`${API_BASE}/api/generations/${genId}/versions/${versionId}/tex`);
+  const res = await fetch(
+    `${API_BASE}/api/generations/${genId}/versions/${versionId}/tex`,
+  );
   await handle(res);
   return (await res.json()).content;
 }
@@ -144,13 +155,47 @@ export async function createVersion(genId, content) {
 }
 
 export async function compileVersion(genId, versionId) {
-  const res = await fetch(`${API_BASE}/api/generations/${genId}/versions/${versionId}/compile`, {
-    method: "POST",
-  });
+  const res = await fetch(
+    `${API_BASE}/api/generations/${genId}/versions/${versionId}/compile`,
+    {
+      method: "POST",
+    },
+  );
   await handle(res);
   return res.json();
 }
 
 export function versionPdfUrl(genId, versionId) {
   return `${API_BASE}/api/generations/${genId}/versions/${versionId}/pdf`;
+}
+
+export async function retryGeneration(id, { jdFile, model, useCloud } = {}) {
+  const fd = new FormData();
+  if (jdFile) fd.append("jd_file", jdFile);
+  if (model) fd.append("model", model);
+  if (useCloud !== undefined)
+    fd.append("use_cloud", useCloud ? "true" : "false");
+  const res = await fetch(`${API_BASE}/api/generations/${id}/retry`, {
+    method: "POST",
+    body: fd,
+  });
+  await handle(res);
+  return res.json();
+}
+
+export async function fixVersion(
+  genId,
+  versionId,
+  { useCloud = true, model } = {},
+) {
+  const res = await fetch(
+    `${API_BASE}/api/generations/${genId}/versions/${versionId}/fix`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ use_cloud: useCloud, model }),
+    },
+  );
+  await handle(res);
+  return res.json();
 }

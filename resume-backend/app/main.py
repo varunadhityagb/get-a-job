@@ -177,42 +177,77 @@ def _run_pipeline_job(generation_id: int, jd_path: Path, model: str, use_cloud: 
 
     with Session(engine) as session:
         gen = session.get(ResumeGeneration, generation_id)
+        gen.status, gen.error_message, gen.failure_stage = "pending", None, None
+        session.add(gen)
+        session.commit()
+
         try:
             tailored, jd_text = run_select(
                 jd_path, RESUME_DATA_YAML, model=model, use_cloud=use_cloud
             )
-            tailored, problems = run_validate(tailored, RESUME_DATA_YAML, strict=False)
-
-            gen_dir = RESUME_DIR / str(generation_id)
-            gen_dir.mkdir(parents=True, exist_ok=True)
-            tex_path = gen_dir / "resume.tex"
-            run_render(tailored, RESUME_DATA_YAML, TEX_TEMPLATE, tex_path)
-            pdf_path = compile_pdf(tex_path)
-
-            initial_version = TexVersion(
-                generation_id=generation_id,
-                label="generated",
-                tex_path=str(tex_path),
-                pdf_path=str(pdf_path),
-                compiled=True,
+        except Exception as e:
+            gen.status, gen.failure_stage, gen.error_message = (
+                "failed",
+                "jd_or_llm",
+                str(e),
             )
-            session.add(initial_version)
+            session.add(gen)
+            session.commit()
+            return
 
-            jd_sub = session.get(JDSubmission, gen.jd_submission_id)
-            jd_sub.jd_text_extracted = jd_text
-            session.add(jd_sub)
+        tailored, problems = run_validate(tailored, RESUME_DATA_YAML, strict=False)
+        jd_sub = session.get(JDSubmission, gen.jd_submission_id)
+        jd_sub.jd_text_extracted = jd_text
+        gen.tailored_json = json.dumps(tailored, indent=2)
+        session.add(jd_sub)
+        session.add(gen)
+        session.commit()
 
-            gen.tailored_json = json.dumps(tailored, indent=2)
-            gen.resume_tex_path = str(tex_path)
+        gen_dir = RESUME_DIR / str(generation_id)
+        gen_dir.mkdir(parents=True, exist_ok=True)
+        tex_path = gen_dir / "resume.tex"
+
+        try:
+            run_render(tailored, RESUME_DATA_YAML, TEX_TEMPLATE, tex_path)
+        except Exception as e:
+            gen.status, gen.failure_stage, gen.error_message = (
+                "failed",
+                "render",
+                str(e),
+            )
+            session.add(gen)
+            session.commit()
+            return
+
+        gen.resume_tex_path = str(tex_path)
+        version = TexVersion(
+            generation_id=generation_id,
+            label="generated",
+            tex_path=str(tex_path),
+            compiled=False,
+        )
+        session.add(version)
+        session.commit()
+        session.refresh(version)
+
+        try:
+            pdf_path = compile_pdf(tex_path)
+            version.pdf_path = str(pdf_path)
+            version.compiled = True
             gen.resume_pdf_path = str(pdf_path)
             gen.status = "done"
             if problems:
                 gen.error_message = "Auto-stripped ungrounded content:\n" + "\n".join(
                     problems
                 )
-        except Exception as e:
-            gen.status = "failed"
-            gen.error_message = str(e)
+        except RuntimeError as e:
+            gen.status, gen.failure_stage, gen.error_message = (
+                "failed",
+                "compile",
+                str(e),
+            )
+
+        session.add(version)
         session.add(gen)
         session.commit()
 
@@ -337,6 +372,115 @@ def get_generation_jd(generation_id: int, session: Session = Depends(get_session
         raise HTTPException(status_code=404, detail="Not found")
     jd_sub = session.get(JDSubmission, gen.jd_submission_id)
     return FileResponse(jd_sub.jd_file_path)
+
+
+@app.post("/api/generations/{generation_id}/retry")
+def retry_generation(
+    generation_id: int,
+    background_tasks: BackgroundTasks,
+    jd_file: Optional[UploadFile] = File(None),
+    model: Optional[str] = Form(None),
+    use_cloud: Optional[bool] = Form(None),
+    session: Session = Depends(get_session),
+):
+    gen = session.get(ResumeGeneration, generation_id)
+    if not gen:
+        raise HTTPException(404, "Not found")
+    jd_sub = session.get(JDSubmission, gen.jd_submission_id)
+
+    if jd_file is not None:
+        ext = Path(jd_file.filename).suffix or ".pdf"
+        jd_path = JD_DIR / f"{uuid.uuid4().hex}{ext}"
+        with jd_path.open("wb") as f:
+            shutil.copyfileobj(jd_file.file, f)
+        jd_sub.jd_file_path = str(jd_path)
+    else:
+        jd_path = Path(jd_sub.jd_file_path)
+
+    use_cloud_final = use_cloud if use_cloud is not None else jd_sub.use_cloud
+    use_model = model or jd_sub.ollama_model_used or "llama3.2:latest"
+    jd_sub.use_cloud = use_cloud_final
+    jd_sub.ollama_model_used = None if use_cloud_final else use_model
+    session.add(jd_sub)
+
+    gen.status, gen.error_message, gen.failure_stage = "pending", None, None
+    session.add(gen)
+    session.commit()
+
+    background_tasks.add_task(
+        _run_pipeline_job, gen.id, jd_path, use_model, use_cloud_final
+    )
+    return {"status": "pending"}
+
+
+# main.py
+FIX_LATEX_PROMPT = """You are a LaTeX debugging assistant. You'll get a .tex
+file that failed to compile with xelatex, plus the tail of its compile log.
+Fix ONLY what's needed to make it compile — do not rewrite content, wording,
+bullets, or structure beyond that. Return ONLY the complete corrected .tex
+file. No markdown fences, no commentary."""
+
+
+@app.post("/api/generations/{generation_id}/versions/{version_id}/fix")
+def fix_version(
+    generation_id: int,
+    version_id: int,
+    payload: dict = None,
+    session: Session = Depends(get_session),
+):
+    v = session.get(TexVersion, version_id)
+    if not v or v.generation_id != generation_id:
+        raise HTTPException(404, "Version not found")
+
+    tex_content = Path(v.tex_path).read_text()
+    log_path = Path(v.tex_path).with_suffix(".log")
+    log_tail = (
+        "\n".join(log_path.read_text(errors="replace").splitlines()[-60:])
+        if log_path.exists()
+        else "(no log — hasn't been compiled)"
+    )
+
+    p = payload or {}
+    use_cloud = p.get("use_cloud", True)
+    model = p.get("model", "claude-sonnet-4-6")
+    user_content = f"TEX FILE:\n{tex_content}\n\nCOMPILE LOG (tail):\n{log_tail}"
+
+    from .pipeline.select import call_llm_cloud, call_llm_ollama_raw
+
+    raw = (
+        call_llm_cloud(FIX_LATEX_PROMPT, user_content, model)
+        if use_cloud
+        else call_llm_ollama_raw(FIX_LATEX_PROMPT, user_content, model)
+    )
+
+    fixed = raw.strip()
+    if fixed.startswith("```"):
+        fixed = fixed.split("```", 2)[1]
+        fixed = (
+            fixed.split("\n", 1)[1]
+            if fixed.split("\n", 1)[0].strip() in ("latex", "tex", "")
+            else fixed
+        )
+
+    existing = session.exec(
+        select(TexVersion).where(TexVersion.generation_id == generation_id)
+    ).all()
+    nums = [
+        int(x.label[4:])
+        for x in existing
+        if x.label.startswith("edit") and x.label[4:].isdigit()
+    ]
+    label = f"edit{max(nums, default=0) + 1}"
+    new_path = Path(v.tex_path).parent / f"{label}.tex"
+    new_path.write_text(fixed)
+
+    new_version = TexVersion(
+        generation_id=generation_id, label=f"{label} (AI fix)", tex_path=str(new_path)
+    )
+    session.add(new_version)
+    session.commit()
+    session.refresh(new_version)
+    return new_version
 
 
 # ---------- export ----------
