@@ -169,9 +169,13 @@ export function versionPdfUrl(genId, versionId) {
   return `${API_BASE}/api/generations/${genId}/versions/${versionId}/pdf`;
 }
 
-export async function retryGeneration(id, { jdFile, model, useCloud } = {}) {
+export async function retryGeneration(
+  id,
+  { jdFile, jdText, model, useCloud } = {},
+) {
   const fd = new FormData();
   if (jdFile) fd.append("jd_file", jdFile);
+  else if (jdText) fd.append("jd_text", jdText);
   if (model) fd.append("model", model);
   if (useCloud !== undefined)
     fd.append("use_cloud", useCloud ? "true" : "false");

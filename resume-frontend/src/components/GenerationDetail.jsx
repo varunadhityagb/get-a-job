@@ -224,7 +224,8 @@ export default function GenerationDetail({ id, onBack }) {
         <div className="card" style={{ marginBottom: 20 }}>
           <div className="error-box">{generation.error_message}</div>
 
-          {generation.failure_stage === "jd_or_llm" && (
+          {(generation.failure_stage === "jd_or_llm" ||
+            !generation.failure_stage) && (
             <RetryWithNewJD
               id={id}
               onRetried={() => window.location.reload()}

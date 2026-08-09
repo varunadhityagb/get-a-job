@@ -379,6 +379,7 @@ def retry_generation(
     generation_id: int,
     background_tasks: BackgroundTasks,
     jd_file: Optional[UploadFile] = File(None),
+    jd_text: Optional[str] = Form(None),
     model: Optional[str] = Form(None),
     use_cloud: Optional[bool] = Form(None),
     session: Session = Depends(get_session),
@@ -393,6 +394,10 @@ def retry_generation(
         jd_path = JD_DIR / f"{uuid.uuid4().hex}{ext}"
         with jd_path.open("wb") as f:
             shutil.copyfileobj(jd_file.file, f)
+        jd_sub.jd_file_path = str(jd_path)
+    elif jd_text and jd_text.strip():
+        jd_path = JD_DIR / f"{uuid.uuid4().hex}.txt"
+        jd_path.write_text(jd_text.strip())
         jd_sub.jd_file_path = str(jd_path)
     else:
         jd_path = Path(jd_sub.jd_file_path)
