@@ -33,6 +33,20 @@ jobs:
 
       - name: Show recent logs on failure
         if: failure()
+        env:
+            WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
         run: |
-          cd resume-deploy
-          docker compose logs --tail=80
+            cd resume-deploy
+            docker compose logs --tail=80
+            curl -H "Content-Type: application/json" \
+            -d '{"content":"❌ Deploy failed — check homeserver logs"}' \
+            "$WEBHOOK_URL"
+
+      - name: Notify Discord on success
+        if: success()
+        env:
+            WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+        run: |
+            curl -H "Content-Type: application/json" \
+            -d '{"content":"✅ Deploy successful!"}' \
+            "$WEBHOOK_URL"
